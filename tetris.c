@@ -26,6 +26,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+This was modified for Magic Lantern by Daniel Cook (petabyte.heb12.com).
+Find the original unmodified source here: http://spritesmods.com/zx3hack/zx3-hack_src.tgz
+
+*/
+
 #define BLOCK_HEIGHT 20
 #define BLOCK_WIDTH 20
 #define SPEED 100
