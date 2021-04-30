@@ -27,14 +27,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-This was modified for Magic Lantern by Daniel Cook (petabyte.heb12.com).
+This was ported to Magic Lantern by Daniel C (petabyte.heb12.com).
 Find the original unmodified source here: http://spritesmods.com/zx3hack/zx3-hack_src.tgz
 
+# TODO
+- I'm aware, code style is inconsistant, feel free to send PR to fix to
+https://magiclantern.fandom.com/wiki/CODING_STYLE
+- Fix "RNG"
+- Polish, (UI?)
+- Rewrite?
+
+- Current high score: 34 on speed 200
 */
 
 #define BLOCK_HEIGHT 20
 #define BLOCK_WIDTH 20
-#define SPEED 100
+#define SPEED 200
 
 typedef struct {
 	unsigned char field[10][20];
@@ -42,9 +50,65 @@ typedef struct {
 	int currBlockX, currBlockY;
 }playfield_t;
 
-//Routines to play Tetris. I'm too lame to document them now; if you
-//are interested in reverse engineering, you probably have no problem figuring
-//out what these do yourself :P
+const unsigned int palette[8] = {
+	COLOR_BLACK, // Background color
+	COLOR_RED,
+	COLOR_GREEN1,
+	COLOR_ORANGE,
+	COLOR_DARK_RED,
+	COLOR_MAGENTA,
+	COLOR_ORANGE,
+	COLOR_WHITE
+};
+
+const unsigned char availBlocks[7][4][4] = {
+	{
+		{0, 0, 0, 0},
+		{0, 0, 0, 0},
+		{1, 1, 1, 1},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{2, 2, 2, 0},
+		{0, 0, 2, 0},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{0, 3, 3, 3},
+		{0, 3, 0, 0},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{0, 4, 4, 0},
+		{0, 4, 4, 0},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{0, 5, 5, 0},
+		{5, 5, 0, 0},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{0, 6, 6, 0},
+		{0, 0, 6, 6},
+		{0, 0, 0, 0},
+	},
+	{
+		{0, 0, 0, 0},
+		{0, 7, 7, 7},
+		{0, 0, 7, 0},
+		{0, 0, 0, 0},
+	}
+};
+
+// Routines to play Tetris. I'm too lame to document them now; if you
+// are interested in reverse engineering, you probably have no problem figuring
+// out what these do yourself :P
 
 void fieldClear(playfield_t* field) {
 	int x, y;
@@ -87,7 +151,7 @@ void fieldDup(playfield_t *dest, playfield_t *src) {
 	memcpy(dest, src, sizeof(playfield_t));
 }
 
-void fieldRotateBlk(playfield_t *field, int dir) {
+void fieldRotateBlock(playfield_t *field, int dir) {
 	unsigned char buff[4][4];
 	int x, y;
 	for (x = 0; x < 4; x++) {
@@ -109,53 +173,8 @@ void fieldRotateBlk(playfield_t *field, int dir) {
 	}
 }
 
-void fieldSelectBlk(playfield_t *field, int blkNo) {
+void fieldSelectBlock(playfield_t *field, int blkNo) {
 	int x, y;
-	const unsigned char availBlocks[7][4][4] = {
-		{
-			{0, 0, 0, 0},
-			{0, 0, 0, 0},
-			{1, 1, 1, 1},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{2, 2, 2, 0},
-			{0, 0, 2, 0},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{0, 3, 3, 3},
-			{0, 3, 0, 0},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{0, 4, 4, 0},
-			{0, 4, 4, 0},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{0, 5, 5, 0},
-			{5, 5, 0, 0},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{0, 6, 6, 0},
-			{0, 0, 6, 6},
-			{0, 0, 0, 0},
-		},
-		{
-			{0, 0, 0, 0},
-			{0, 7, 7, 7},
-			{0, 0, 7, 0},
-			{0, 0, 0, 0},
-		}
-	};
-
 	for (x = 0; x < 4; x++) {
 		for (y = 0; y < 4; y++) {
 			field->currBlock[x][y] = availBlocks[blkNo][x][y];
@@ -182,8 +201,7 @@ static int checkAndKillALine(playfield_t* field) {
 				for (x = 0; x < 10; x++) {
 					if (ry != 0) {
 						field->field[x][ry] = field->field[x][ry - 1];
-					}
-					else {
+					} else {
 						field->field[x][ry] = 0;
 					}
 				}
@@ -215,11 +233,6 @@ int fieldFixBlock(playfield_t *field) {
 }
 
 static void placeBlock(int col, int bx, int by) {
-	unsigned int palette[8] = {
-		COLOR_BLACK, COLOR_RED, COLOR_GREEN1, COLOR_ORANGE, COLOR_DARK_RED,
-		COLOR_MAGENTA, COLOR_ORANGE, COLOR_WHITE
-	};
-
 	bmp_fill(palette[col & 7], bx * BLOCK_WIDTH, by * BLOCK_HEIGHT, BLOCK_WIDTH, BLOCK_HEIGHT);
 }
 
@@ -250,98 +263,112 @@ void display(playfield_t *field) {
 
 playfield_t field;
 playfield_t testfield;
-int mustFixBlk;
+int mustFixBlock;
 
-// Dumb "random"
-int a = 0;
-int rand() {
-	char randInts[] = {1, 4, 3, 5, 0, 5, 1, 3, 0, 2, 4, 3};
-	if (a == sizeof(randInts) - 1) {
-		a = 0;
-	}
-	else {
-		a++;
-	}
+static unsigned int randSeed = 0;
 
-	return randInts[a];
+void randAddEnt(int chr) {
+	randSeed += chr;
 }
+
+int rand() {
+	randSeed = randSeed * 1103515245 + 12345;
+	return randSeed % 65536;
+}
+
 
 static void tetris_task() {
 	running = 1;
 	int dead = 0;
 
 	fieldClear(&field);
-	fieldSelectBlk(&field, 2);
+	fieldSelectBlock(&field, 2);
 	
 	bmp_fill(COLOR_BLACK, 0, 0, 300, 300);
 
-	do {
+	while (1) {
+		// Wait for input
+		if (!running) {
+			msleep(1);
+			continue;
+		}
+		
 		fieldDup(&testfield, &field);
-		mustFixBlk = 0;
+		mustFixBlock = 0;
 
 		testfield.currBlockY++;
 		if (fieldIsPossible(&testfield)) {
 			fieldDup(&field, &testfield);
 		} else {
-			mustFixBlk = 1;
+			mustFixBlock = 1;
 		}
 
 		display(&field);
-		msleep(200);
+		msleep(SPEED);
 
-		if (mustFixBlk && dead == 0) {
+		if (mustFixBlock && dead == 0) {
 			fieldFixBlock(&field);
-			fieldSelectBlk(&field, rand());
+			fieldSelectBlock(&field, rand() % 7);
 			if (!fieldIsPossible(&field)) {
 				running = 0;
-				bmp_printf(FONT_LARGE, 300, 30, "Game Over.");
+				bmp_printf(FONT_LARGE, 300, 50, "Game Over.");
 				return;
 			}
 		}
-	} while (1);
+	}
 }
 
 static unsigned int tetris_keypress(unsigned int key) {
 	if (!running) {
 		return 1;
 	}
+
+	randAddEnt(key);
+
+	// Tell tetris_task to stop loop when
+	// receiving button input
+	running = 0;
+
+	fieldDup(&testfield, &field);
+	mustFixBlock = 0;
 	
 	switch(key) {
-		case MODULE_KEY_Q:
-			running = 0;
-			return 1;
-		case MODULE_KEY_PRESS_LEFT:
-			testfield.currBlockX--;
-			if (fieldIsPossible(&testfield)) {
-				fieldDup(&field, &testfield);
-			}
+	case MODULE_KEY_Q:
+		running = 0;
+		return 1;
+	case MODULE_KEY_PRESS_LEFT:
+		testfield.currBlockX--;
+		if (fieldIsPossible(&testfield)) {
+			fieldDup(&field, &testfield);
+		}
 
-			break;
-		case MODULE_KEY_PRESS_RIGHT:
-			testfield.currBlockX++;
-			if (fieldIsPossible(&testfield)) {
-				fieldDup(&field, &testfield);
-			}
-			
-			break;
-		case MODULE_KEY_PRESS_UP:
-			fieldRotateBlk(&testfield, 1);
-			if (fieldIsPossible(&testfield)) {
-				fieldDup(&field, &testfield);
-			}
+		break;
+	case MODULE_KEY_PRESS_RIGHT:
+		testfield.currBlockX++;
+		if (fieldIsPossible(&testfield)) {
+			fieldDup(&field, &testfield);
+		}
+		
+		break;
+	case MODULE_KEY_PRESS_UP:
+		fieldRotateBlock(&testfield, 1);
+		if (fieldIsPossible(&testfield)) {
+			fieldDup(&field, &testfield);
+		}
 
-			break;
-		case MODULE_KEY_PRESS_DOWN:
-			while(fieldIsPossible(&testfield)) {
-				fieldDup(&field, &testfield);
-				testfield.currBlockY++;
-			}
-			
-			mustFixBlk = 1;
-			break;
+		break;
+	case MODULE_KEY_PRESS_DOWN:
+		while(fieldIsPossible(&testfield)) {
+			fieldDup(&field, &testfield);
+			testfield.currBlockY++;
+		}
+		
+		mustFixBlock = 1;
+		break;
 	}
 
 	display(&field);
+	running = 1;
 	return 0;
 }
 
@@ -350,7 +377,7 @@ static struct menu_entry tetris_menu[] = {
 		.name = "ML Tetris",
 		.select = run_in_separate_task,
 		.priv = tetris_task,
-		.help = "A Cool Game",
+		.help = "Tetris on your DSLR",
 	},
 };
 
@@ -366,10 +393,10 @@ static unsigned int tetris_deinit()
 }
 
 MODULE_CBRS_START()
-MODULE_CBR(CBR_KEYPRESS, tetris_keypress, 0)
+	MODULE_CBR(CBR_KEYPRESS, tetris_keypress, 0)
 MODULE_CBRS_END()
 
 MODULE_INFO_START()
-MODULE_INIT(tetris_init)
-MODULE_DEINIT(tetris_deinit)
+	MODULE_INIT(tetris_init)
+	MODULE_DEINIT(tetris_deinit)
 MODULE_INFO_END()
