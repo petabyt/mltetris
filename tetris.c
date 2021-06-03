@@ -44,7 +44,7 @@ struct playfield_t
     int currBlockX, currBlockY;
 };
 
-const unsigned int palette[8] =
+unsigned int palette[8] =
 {
     COLOR_BLACK, /* Background color */
     COLOR_RED,
@@ -56,7 +56,7 @@ const unsigned int palette[8] =
     COLOR_WHITE
 };
 
-const unsigned char availBlocks[7][4][4] =
+unsigned char availBlocks[7][4][4] =
 {
     {
         {0, 0, 0, 0},
@@ -205,7 +205,7 @@ void fieldSelectBlock(playfield_t *field, int blkNo)
     field->currBlockY = -2;
 }
 
-static int checkAndKillALine(playfield_t* field)
+int checkAndKillALine(playfield_t* field)
 {
     int x, y, ry;
     int found;
@@ -266,7 +266,7 @@ int fieldFixBlock(playfield_t *field)
     return 1;
 }
 
-static void placeBlock(int col, int bx, int by)
+void placeBlock(int col, int bx, int by)
 {
     bmp_fill(palette[col & 7], bx * BLOCK_WIDTH, by * BLOCK_HEIGHT, BLOCK_WIDTH, BLOCK_HEIGHT);
 }
@@ -307,7 +307,7 @@ playfield_t field;
 playfield_t testfield;
 int mustFixBlock;
 
-static unsigned int randSeed = 0;
+unsigned int randSeed = 0;
 
 void randAddEnt(int chr)
 {
@@ -321,7 +321,7 @@ int rand()
 }
 
 
-static void tetris_task()
+void tetris_task()
 {
     running = 1;
     int dead = 0;
@@ -370,7 +370,7 @@ static void tetris_task()
     }
 }
 
-static unsigned int tetris_keypress(unsigned int key)
+unsigned int tetris_keypress(unsigned int key)
 {
     if (!running)
     {
@@ -431,7 +431,7 @@ static unsigned int tetris_keypress(unsigned int key)
     return 0;
 }
 
-static struct menu_entry tetris_menu[] =
+struct menu_entry tetris_menu[] =
 {
     {
         .name = "ML Tetris",
@@ -441,22 +441,22 @@ static struct menu_entry tetris_menu[] =
     },
 };
 
-static unsigned int tetris_init()
+unsigned int tetris_init()
 {
     menu_add("Debug", tetris_menu, COUNT(tetris_menu));
     return 0;
 }
 
-static unsigned int tetris_deinit()
+unsigned int tetris_deinit()
 {
     return 0;
 }
 
 MODULE_CBRS_START()
-	MODULE_CBR(CBR_KEYPRESS, tetris_keypress, 0)
+MODULE_CBR(CBR_KEYPRESS, tetris_keypress, 0)
 MODULE_CBRS_END()
 
 MODULE_INFO_START()
-	MODULE_INIT(tetris_init)
-	MODULE_DEINIT(tetris_deinit)
+MODULE_INIT(tetris_init)
+MODULE_DEINIT(tetris_deinit)
 MODULE_INFO_END()
