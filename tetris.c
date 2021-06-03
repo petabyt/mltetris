@@ -443,7 +443,7 @@ struct menu_entry tetris_menu[] =
 
 unsigned int tetris_init()
 {
-    menu_add("Debug", tetris_menu, COUNT(tetris_menu));
+    menu_add("Games", tetris_menu, COUNT(tetris_menu));
     return 0;
 }
 
