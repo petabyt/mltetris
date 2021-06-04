@@ -37,12 +37,12 @@ Find the original unmodified source here: http://spritesmods.com/zx3hack/zx3-hac
 #define BLOCK_WIDTH 20
 #define SPEED 200
 
-struct playfield_t
+typedef struct playfield_t
 {
     unsigned char field[10][20];
     unsigned char currBlock[4][4];
     int currBlockX, currBlockY;
-};
+} playfield_t;
 
 unsigned int palette[8] =
 {
