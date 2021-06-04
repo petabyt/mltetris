@@ -1,3 +1,6 @@
+# Force format
+__A := $(shell astyle --style=allman cube.c)
+
 TOP_DIR=../..
 MODULE_NAME=tetris
 MODULE_OBJS=tetris.o
