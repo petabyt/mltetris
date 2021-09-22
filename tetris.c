@@ -27,26 +27,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-This was ported to Magic Lantern by Daniel C (petabyte.heb12.com).
+This was ported to Magic Lantern by Daniel C (petabyte.dev).
 Find the original unmodified source here: http://spritesmods.com/zx3hack/zx3-hack_src.tgz
 
 - Current high score: 34 on speed 200
 */
 
-#define BLOCK_HEIGHT 20
-#define BLOCK_WIDTH 20
+/* Offset in pixels */
+#define OFFSET_X 20
+#define OFFSET_Y 20
+
+#define BLOCKS_X 15
+#define BLOCKS_Y 25
+
+#define BLOCK_HEIGHT 17
+#define BLOCK_WIDTH 17
 #define SPEED 200
 
 typedef struct playfield_t
 {
-    unsigned char field[10][20];
+    unsigned char field[BLOCKS_X][BLOCKS_Y];
     unsigned char currBlock[4][4];
     int currBlockX, currBlockY;
 } playfield_t;
 
 unsigned int palette[8] =
 {
-    COLOR_BLACK, /* Background color */
+    COLOR_GRAY(70), /* Background color */
     COLOR_RED,
     COLOR_GREEN1,
     COLOR_ORANGE,
@@ -111,9 +118,9 @@ out what these do yourself :P
 void fieldClear(playfield_t* field)
 {
     int x, y;
-    for (x = 0; x < 10; x++)
+    for (x = 0; x < BLOCKS_X; x++)
     {
-        for (y = 0; y < 20; y++)
+        for (y = 0; y < BLOCKS_Y; y++)
         {
             field->field[x][y] = 0;
         }
@@ -140,7 +147,7 @@ int fieldIsPossible(playfield_t* field)
             {
                 px = x + field->currBlockX;
                 py = y + field->currBlockY;
-                if (px < 0 || px >= 10 || py >= 20)
+                if (px < 0 || px >= BLOCKS_X || py >= BLOCKS_Y)
                 {
                     return 0;
                 }
@@ -209,10 +216,10 @@ int checkAndKillALine(playfield_t* field)
 {
     int x, y, ry;
     int found;
-    for (y = 0; y < 20; y++)
+    for (y = 0; y < BLOCKS_Y; y++)
     {
         found = 1;
-        for (x = 0; x < 10; x++)
+        for (x = 0; x < BLOCKS_X; x++)
         {
             if (field->field[x][y] == 0)
                 found = 0;
@@ -223,7 +230,7 @@ int checkAndKillALine(playfield_t* field)
             /* Remove line */
             for (ry = y; ry >= 0; ry--)
             {
-                for (x = 0; x < 10; x++)
+                for (x = 0; x < BLOCKS_X; x++)
                 {
                     if (ry != 0)
                     {
@@ -268,22 +275,29 @@ int fieldFixBlock(playfield_t *field)
 
 void placeBlock(int col, int bx, int by)
 {
-    bmp_fill(palette[col & 7], bx * BLOCK_WIDTH, by * BLOCK_HEIGHT, BLOCK_WIDTH, BLOCK_HEIGHT);
+    bmp_fill(
+    	palette[col & 7],
+    	(bx * BLOCK_WIDTH) + OFFSET_X,
+    	(by * BLOCK_HEIGHT) + OFFSET_Y,
+    	BLOCK_WIDTH, BLOCK_HEIGHT
+    );
 }
 
 /* Display a Tetris playing field */
 void display(playfield_t *field)
 {
+	// Draw blank background
     int x, y;
     int px, py;
-    for (x = 0; x < 10; x++)
+    for (x = 0; x < BLOCKS_X; x++)
     {
-        for (y = 0; y < 20; y++)
+        for (y = 0; y < BLOCKS_Y; y++)
         {
             placeBlock(field->field[x][y], x, y);
         }
     }
 
+	// Draw blocks
     for (x = 0; x < 4; x++)
     {
         for (y = 0; y < 4; y++)
@@ -292,7 +306,7 @@ void display(playfield_t *field)
             py = y + field->currBlockY;
             if (field->currBlock[x][y] != 0)
             {
-                if (px >= 0 && py >= 0 && px < 10 && py < 20)
+                if (px >= 0 && py >= 0 && px < BLOCKS_X && py < BLOCKS_Y)
                 {
                     placeBlock(field->currBlock[x][y], px, py);
                 }
@@ -323,13 +337,11 @@ int rand()
 
 void tetris_task()
 {
-    running = 1;
+	running = 1;
     int dead = 0;
 
     fieldClear(&field);
     fieldSelectBlock(&field, 2);
-
-    bmp_fill(COLOR_BLACK, 0, 0, 300, 300);
 
     while (1)
     {
@@ -354,7 +366,15 @@ void tetris_task()
         }
 
         display(&field);
-        msleep(SPEED);
+
+        bmp_printf(FONT_MED, 300, 100, "MLTetris - By @petabyte / Daniel");
+        bmp_printf(FONT_MED, 300, 130, "And Jeroen Domburg - (C) 2010");
+
+		/* Don't wait if on bottom */
+        if (!mustFixBlock)
+        {
+        	msleep(SPEED);
+        }
 
         if (mustFixBlock && dead == 0)
         {
