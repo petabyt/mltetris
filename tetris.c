@@ -34,7 +34,6 @@ void tetris_task()
 {
     int sleeploop = 0;
 
-    pt_reset();
     running = 1;
     TASK_LOOP
     {
